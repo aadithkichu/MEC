@@ -130,7 +130,7 @@ While toy problems provide clean, controlled environments to benchmark search al
 
 Route-finding involves finding a path from an initial location to a destination location through a network of roads, airways, or data paths. Applications range from consumer GPS navigation (e.g., Google Maps) to network packet routing and military logistics.  
 
-* **State Space:** In simple driving navigation, a state is defined merely by a discrete location (e.g., $\text{In}(\text{Bucharest})$). However, in complex airline travel planning, a state must capture significantly more context:  
+* **State Space:** In simple driving navigation, a state is defined merely by a discrete location (e.g. In Bucharest). However, in complex airline travel planning, a state must capture significantly more context:  
   * Current geographic location (e.g., airport terminal).  
   * Current time of day and calendar date.  
   * Historical flight segment details (previous layovers, fare basis codes, domestic vs. international status).  
