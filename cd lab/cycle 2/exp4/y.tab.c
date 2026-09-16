@@ -1141,7 +1141,7 @@ yyreduce:
   case 2: /* start: E '\n'  */
 #line 38 "ast.y"
       {
-          printf("Abstract Syntax Tree:\n");
+          printf("\nAbstract Syntax Tree (Preorder):\n");
           preorder((yyvsp[-1].node));
           printf("\n");
       }

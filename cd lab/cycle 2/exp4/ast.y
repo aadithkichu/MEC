@@ -36,7 +36,7 @@ void yyerror(char *s);
 start:
       E '\n'
       {
-          printf("Abstract Syntax Tree:\n");
+          printf("\nAbstract Syntax Tree (Preorder):\n");
           preorder($1);
           printf("\n");
       }
