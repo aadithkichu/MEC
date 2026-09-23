@@ -39,3 +39,29 @@ First(S)={a}
 Follow(S)={$}
 Continue(0/1)? 0
 ```
+```
+mec@ccf-8:~/Documents/CS7B/cycle3$ ./a.out
+
+Grammar without left recursion
+		 E->TE' 
+		 E'->+TE'|e 
+		 T->FT' 
+		 T'->*FT'|e 
+		 F->(E)|i
+ Enter the input expression: i+i*i
+Expressions	 Sequence of production rules
+E=TE'                      E->TE'
+E=FT'E'                    T->FT'
+E=iT'E'                    F->i
+E=ieE'                     T'->e
+E=i+TE'                    E'->+TE'
+E=i+FT'E'                  T->FT'
+E=i+iT'E'                  F->i
+E=i+i*FT'E'                T'->*FT'
+E=i+i*iT'E'                F->i
+E=i+i*ieE'                 T'->e
+E=i+i*ie                   E'->e
+
+E=i+i*i
+
+```
