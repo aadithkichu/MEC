@@ -56,9 +56,18 @@ int main() {
 
             printf("%s : Number\n", buffer);
         }
-        // 4. Process Operators
-        else if (strchr("+-*/%=", ch)) {
-            printf("%c : Operator\n", ch);
+        // 4. Process Operators (Handles both 1-char and 2-char operators)
+        else if (strchr("+-*/%=<>!", ch)) {
+            char next = fgetc(fp);
+
+            if (ch == '>' && next == '=')      printf(">= : Operator\n");
+            else if (ch == '<' && next == '=') printf("<= : Operator\n");
+            else if (ch == '=' && next == '=') printf("== : Operator\n");
+            else if (ch == '!' && next == '=') printf("!= : Operator\n");
+            else {
+                ungetc(next, fp); // Put 'next' back if it's just a single operator like '>' or '+'
+                printf("%c : Operator\n", ch);
+            }
         }
         // 5. Process Delimiters
         else if (strchr(";,(){}", ch)) {
