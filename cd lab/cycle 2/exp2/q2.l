@@ -3,7 +3,7 @@
 %}
 
 %%
-[a-zA-Z]    { return LETTER; }
+[a-zA-Z_]    { return LETTER; }
 [0-9]       { return DIGIT; }
 \n          { return '\n'; }
 .           { return yytext[0]; }

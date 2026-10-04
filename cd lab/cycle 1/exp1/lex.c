@@ -30,9 +30,9 @@ int main() {
             continue;
 
         // 2. Process Keywords and Identifiers
-        if (isalpha(ch)) {
+        if (isalpha(ch) || ch =='_') {
             buffer[j++] = ch;
-            while (isalnum(ch = fgetc(fp))) {
+            while ((ch = fgetc(fp)) != EOF && (isalnum(ch) || ch == '_')) {
                 buffer[j++] = ch;
             }
             buffer[j] = '\0';
