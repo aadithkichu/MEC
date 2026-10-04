@@ -44,10 +44,13 @@ int main() {
             else
                 printf("%s : Identifier\n", buffer);
         }
-        // 3. Process Numbers
+        // 3. Process Numbers (Handles Integers & Floats like 3.14)
         else if (isdigit(ch)) {
             buffer[j++] = ch;
-            while (isdigit(ch = fgetc(fp))) {
+            int has_dot = 0;
+
+            while ((ch = fgetc(fp)) != EOF && (isdigit(ch) || (ch == '.' && !has_dot))) {
+                if (ch == '.') has_dot = 1; // Remember that we already saw a decimal point
                 buffer[j++] = ch;
             }
             buffer[j] = '\0';
