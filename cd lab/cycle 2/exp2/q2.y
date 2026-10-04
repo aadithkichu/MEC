@@ -1,5 +1,6 @@
 %{
 #include <stdio.h>
+#include <stdlib.h>
 
 int yylex();
 void yyerror(char *s);
@@ -9,7 +10,7 @@ void yyerror(char *s);
 
 %%
 start:
-      variable '\n'    { printf("Valid Variable\n"); }
+      variable '\n'    { printf("Valid Variable\n"); exit(0); }
     ;
 
 variable:
@@ -29,4 +30,5 @@ int main()
 void yyerror(char *s)
 {
     printf("Invalid Variable\n");
+    exit(0);
 }

@@ -1,5 +1,6 @@
 %{
 #include <stdio.h>
+#include <stdlib.h>
 
 int yylex();
 void yyerror(char *s);
@@ -9,18 +10,26 @@ void yyerror(char *s);
 
 %left '+' '-'
 %left '*' '/'
-%left '(' ')'
+%nonassoc UMINUS
 
 %%
 start:
-      expression '\n'    { printf("Result = %d\n", $1); }
+      expression '\n'    { printf("Result = %d\n", $1); exit(0); }
     ;
 
 expression:
       expression '+' expression  { $$ = $1 + $3; }
     | expression '-' expression  { $$ = $1 - $3; }
     | expression '*' expression  { $$ = $1 * $3; }
-    | expression '/' expression  { $$ = $1 / $3; }
+    | expression '/' expression  { 
+                                    if ($3 == 0) {
+                                        printf("Error: Division by zero\n");
+                                        exit(0);
+                                    } else {
+                                        $$ = $1 / $3;
+                                    }
+                                 }
+    | '-' expression %prec UMINUS { $$ = -$2; }
     | '(' expression ')'          { $$ = $2; }
     | NUMBER                      { $$ = $1; }
     ;
@@ -36,4 +45,5 @@ int main()
 void yyerror(char *s)
 {
     printf("Invalid Expression\n");
+    exit(0);
 }

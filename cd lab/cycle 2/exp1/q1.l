@@ -3,8 +3,8 @@
 %}
 
 %%
-.*AADI.*    { printf("String contains AADI - NOT ACCEPTED\n"); }
-.*          { printf("String does not contain AADI - ACCEPTED\n"); }
+.*AADI.*\n   { printf("NOT ACCEPTED (Contains AADI)\n"); }
+.*\n         { printf("ACCEPTED (Does not contain AADI)\n"); }
 %%
 
 int main()
