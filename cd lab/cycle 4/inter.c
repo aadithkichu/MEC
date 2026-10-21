@@ -1,58 +1,74 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 
+char op_stack[20];
+char val_stack[20][10];
+int op_top = -1, val_top = -1, temp_count = 1;
+
+void push_op(char c) { 
+    op_stack[++op_top] = c; 
+}
+
+char pop_op() { 
+    return op_stack[op_top--]; 
+}
+
+void push_val(char *val) { 
+    strcpy(val_stack[++val_top], val); 
+}
+
+void pop_val(char *val) { 
+    strcpy(val, val_stack[val_top--]); 
+}
+
+int precedence(char op) {
+    if (op == '*' || op == '/') return 2;
+    if (op == '+' || op == '-') return 1;
+    return 0;
+}
+
+void generate_3ac() {
+    char op[2], arg1[10], arg2[10], temp[10];
+    
+    op[0] = pop_op();
+    op[1] = '\0';
+
+    pop_val(arg2);
+    pop_val(arg1);
+
+    sprintf(temp, "t%d", temp_count++);
+    printf("%s = %s %s %s\n", temp, arg1, op, arg2);
+    push_val(temp);
+}
+
 int main() {
-    FILE *fp1, *fp2;
-    char op[5], arg1[10], arg2[10], result[10];
+    char expr[50] = "a+b*c";
+    char result_var[10] = "x";
 
-    // Open input file for reading
-    fp1 = fopen("input.txt", "r");
-    if (fp1 == NULL) {
-        printf("Error: Could not open input.txt\n");
-        return 1;
-    }
+    printf("Input Expression: %s = %s\n\n", result_var, expr);
+    printf("Generated Intermediate Code (Three-Address Code):\n");
+    printf("--------------------------------------------------\n");
 
-    // Open output file for writing
-    fp2 = fopen("output.txt", "w");
-    if (fp2 == NULL) {
-        printf("Error: Could not open output.txt\n");
-        fclose(fp1);
-        return 1;
-    }
-
-    // Read quadruples format: (operator, arg1, arg2, result)
-    // Ensures exactly 4 items are read per iteration to avoid duplication loops
-    while (fscanf(fp1, "%s %s %s %s", op, arg1, arg2, result) == 4) {
-        if (strcmp(op, "+") == 0) {
-            fprintf(fp2, "MOV R0, %s\n", arg1);
-            fprintf(fp2, "ADD R0, %s\n", arg2);
-            fprintf(fp2, "MOV %s, R0\n", result);
-        } 
-        else if (strcmp(op, "*") == 0) {
-            fprintf(fp2, "MOV R0, %s\n", arg1);
-            fprintf(fp2, "MUL R0, %s\n", arg2);
-            fprintf(fp2, "MOV %s, R0\n", result);
-        } 
-        else if (strcmp(op, "-") == 0) {
-            fprintf(fp2, "MOV R0, %s\n", arg1);
-            fprintf(fp2, "SUB R0, %s\n", arg2);
-            fprintf(fp2, "MOV %s, R0\n", result);
-        } 
-        else if (strcmp(op, "/") == 0) {
-            fprintf(fp2, "MOV R0, %s\n", arg1);
-            fprintf(fp2, "DIV R0, %s\n", arg2);
-            fprintf(fp2, "MOV %s, R0\n", result);
-        } 
-        else if (strcmp(op, "=") == 0) {
-            fprintf(fp2, "MOV R0, %s\n", arg1);
-            fprintf(fp2, "MOV %s, R0\n", result);
+    for (int i = 0; expr[i] != '\0'; i++) {
+        if (isalnum(expr[i])) {
+            char val[2] = {expr[i], '\0'};
+            push_val(val);
+        } else {
+            while (op_top != -1 && precedence(op_stack[op_top]) >= precedence(expr[i])) {
+                generate_3ac();
+            }
+            push_op(expr[i]);
         }
     }
 
-    // Close files
-    fclose(fp1);
-    fclose(fp2);
+    while (op_top != -1) {
+        generate_3ac();
+    }
 
-    printf("Target assembly code successfully generated in output.txt\n");
+    char final_temp[10];
+    pop_val(final_temp);
+    printf("%s = %s\n", result_var, final_temp);
+
     return 0;
 }
