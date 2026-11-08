@@ -5,54 +5,76 @@
 int n;
 char prods[10][20];
 char input[50];
+char current_form[100];
 
 int parse_symbol(char symbol, int *ptr);
 int parse_non_terminal(char symbol, int *ptr);
 
-// Parses a single character (Terminal vs Non-Terminal)
+void replace_leftmost(char symbol, const char *rhs) {
+    char temp[100] = "";
+    int len = strlen(current_form);
+    int replaced = 0;
+
+    for (int i = 0; i < len; i++) {
+        if (current_form[i] == symbol && !replaced) {
+            if (strcmp(rhs, "$") != 0) {
+                strcat(temp, rhs);
+            }
+            replaced = 1;
+        } else {
+            int cur_len = strlen(temp);
+            temp[cur_len] = current_form[i];
+            temp[cur_len + 1] = '\0';
+        }
+    }
+    strcpy(current_form, temp);
+}
+
 int parse_symbol(char symbol, int *ptr) {
-    // 1. Epsilon match
     if (symbol == '$') return 1;
 
-    // 2. Terminal match
     if (!isupper(symbol)) {
         if (input[*ptr] == symbol) {
-            (*ptr)++; // Move input pointer forward
+            (*ptr)++;
             return 1;
         }
-        return 0; // Mismatch
+        return 0;
     }
 
-    // 3. Non-Terminal (Uppercase letter)
     return parse_non_terminal(symbol, ptr);
 }
 
-// Tries productions matching the non-terminal symbol
 int parse_non_terminal(char symbol, int *ptr) {
-    int start_ptr = *ptr; // Save starting position to rewind if a rule fails
+    int start_ptr = *ptr;
 
     for (int i = 0; i < n; i++) {
-        // Skip productions that don't match the non-terminal
         if (prods[i][0] != symbol) continue;
 
-        *ptr = start_ptr; // Reset pointer for this attempt
+        *ptr = start_ptr;
         int success = 1;
 
-        // Print Top-Down step immediately when expanding
-        printf("Applied: %c -> %s\n", symbol, &prods[i][3]);
+        // Save state of derivation string in case this rule fails
+        char backup_form[100];
+        strcpy(backup_form, current_form);
 
-        // Loop through RHS symbols starting after '->' (index 3)
+        // Replace leftmost occurrence of 'symbol' with RHS
+        replace_leftmost(symbol, &prods[i][3]);
+        printf("=> %s\n", current_form);
+
         for (int j = 3; prods[i][j] != '\0'; j++) {
             if (!parse_symbol(prods[i][j], ptr)) {
                 success = 0;
-                break; // Stop checking this rule if any symbol fails
+                break;
             }
         }
 
-        if (success) return 1; // Successfully parsed this rule
+        if (success) return 1;
+
+        // Restore derivation string on failure
+        strcpy(current_form, backup_form);
     }
 
-    *ptr = start_ptr; // Rewind pointer if no rules match
+    *ptr = start_ptr;
     return 0;
 }
 
@@ -71,7 +93,12 @@ int main() {
     int ptr = 0;
     char start_symbol = prods[0][0];
 
-    printf("\n--- Recursive Descent Derivation (Top-Down) ---\n");
+    current_form[0] = start_symbol;
+    current_form[1] = '\0';
+
+    printf("\n--- Sentential Form Derivation ---\n");
+    printf("%s\n", current_form);
+
     if (parse_non_terminal(start_symbol, &ptr) && input[ptr] == '\0') {
         printf("\nResult: Input String Successfully Parsed!\n");
     } else {
