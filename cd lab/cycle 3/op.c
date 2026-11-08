@@ -1,28 +1,21 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
-void main() {
-    char stack[20], ip[20], opt[10][10][1], ter[10];
-    int i, j, k, n, top = 0, col, row;
+int main() {
+    char stack[50], ip[50], opt[10][10][2], ter[10];
+    int i, j, k, n, top = 0, col = -1, row = -1;
 
-    for (i = 0; i < 10; i++) {
-        stack[i] = 0;
-        ip[i] = 0;
-        for (j = 0; j < 10; j++) {
-            opt[i][j][1] = 0;
-        }
-    }
+    printf("Enter the no. of terminals: ");
+    if (scanf("%d", &n) != 1) return 0;
 
-    printf("Enter the no. of terminals :\n");
-    scanf("%d", &n);
-
-    printf("\nEnter the terminals :\n");
+    printf("Enter the terminals (e.g., i+*$): ");
     scanf("%s", ter);
 
-    printf("\nEnter the table values :\n");
+    printf("\nEnter the precedence table values (<, >, =):\n");
     for (i = 0; i < n; i++) {
         for (j = 0; j < n; j++) {
-            printf("Enter the value for %c %c: ", ter[i], ter[j]);
+            printf("Value for %c %c: ", ter[i], ter[j]);
             scanf("%s", opt[i][j]);
         }
     }
@@ -39,58 +32,79 @@ void main() {
             printf("\t%c", opt[i][j][0]);
         }
     }
+    printf("\n\n");
 
     stack[top] = '$';
-    
-    printf("\nEnter the input string: ");
-    scanf("%s", ip);
-    
-    i = 0;
-    printf("\nSTACK\t\t\tINPUT STRING\t\t\tACTION\n");
-    printf("\n%s\t\t\t%s\t\t\t", stack, ip);
+    stack[top + 1] = '\0';
 
-    while (i <= strlen(ip)) {
-        for (k = 0; k < n; k++) {
-            if (stack[top] == ter[k])
-                col = k;
-            if (ip[i] == ter[k])
-                row = k;
+    printf("Enter the input string (ending with $): ");
+    scanf("%s", ip);
+
+    i = 0;
+    printf("\n%-20s %-20s %-20s\n", "STACK", "INPUT STRING", "ACTION");
+
+    while (i < strlen(ip)) {
+        // Print current stack and input state
+        for (k = 0; k <= top; k++) printf("%c", stack[k]);
+        printf("\t\t\t");
+        for (k = i; k < strlen(ip); k++) printf("%c", ip[k]);
+        printf("\t\t\t");
+
+        // Find top-most terminal on the stack
+        int get_top_ter = top;
+        while (get_top_ter >= 0) {
+            int found = 0;
+            for (k = 0; k < n; k++) {
+                if (stack[get_top_ter] == ter[k]) {
+                    col = k;
+                    found = 1;
+                    break;
+                }
+            }
+            if (found) break;
+            get_top_ter--;
         }
 
-        if ((stack[top] == '$') && (ip[i] == '$')) {
-            printf("String is accepted\n");
-            break;
-        } 
-        else if ((opt[col][row][0] == '<') || (opt[col][row][0] == '=')) {
-            stack[++top] = opt[col][row][0];
-            stack[++top] = ip[i];
-            printf("Shift %c", ip[i]);
-            i++;
-        } 
-        else {
-            if (opt[col][row][0] == '>') {
-                while (stack[top] != '<') {
-                    --top;
-                }
-                top = top - 1;
-                printf("Reduce");
-            } 
-            else {
-                printf("\nString is not accepted");
+        // Find current input symbol in terminals
+        row = -1;
+        for (k = 0; k < n; k++) {
+            if (ip[i] == ter[k]) {
+                row = k;
                 break;
             }
         }
 
-        printf("\n");
-        for (k = 0; k <= top; k++) {
-            printf("%c", stack[k]);
+        if (col == -1 || row == -1) {
+            printf("Error: Invalid terminal symbol encountered.\n");
+            break;
         }
-        
-        printf("\t\t\t");
-        for (k = i; k < strlen(ip); k++) {
-            printf("%c", ip[k]);
+
+        if (stack[top] == '$' && ip[i] == '$') {
+            printf("String is accepted\n");
+            break;
+        } 
+        else if (opt[col][row][0] == '<' || opt[col][row][0] == '=') {
+            stack[++top] = opt[col][row][0];
+            stack[++top] = ip[i];
+            stack[top + 1] = '\0';
+            printf("Shift %c\n", ip[i]);
+            i++;
+        } 
+        else if (opt[col][row][0] == '>') {
+            while (top > 0 && stack[top] != '<') {
+                --top;
+            }
+            if (top > 0) {
+                --top; // Remove '<'
+            }
+            stack[top + 1] = '\0';
+            printf("Reduce\n");
+        } 
+        else {
+            printf("String is not accepted\n");
+            break;
         }
-        
-        printf("\t\t\t");
     }
+
+    return 0;
 }
