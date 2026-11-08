@@ -17,14 +17,14 @@ int get_rhs_start(const char *prod) {
     return 2;
 }
 
-void find_first(char symbol, char result[], int *size) {
+void find_first(char symbol, char result[], int *size, int visited[]) {
     if (!isupper(symbol)) {
         add_to_set(result, size, symbol);
         return;
     }
 
     for (int i = 0; i < n; i++) {
-        if (prods[i][0] != symbol) continue;
+        if (prods[i][0] != symbol || visited[i]) continue;
 
         int rhs = get_rhs_start(prods[i]);
         if (prods[i][rhs] == '$') {
@@ -32,12 +32,14 @@ void find_first(char symbol, char result[], int *size) {
             continue;
         }
 
+        visited[i] = 1; // Mark production active on current expansion path
+
         while (prods[i][rhs] != '\0') {
             char temp[20];
             int temp_size = 0;
             int has_epsilon = 0;
 
-            find_first(prods[i][rhs], temp, &temp_size);
+            find_first(prods[i][rhs], temp, &temp_size, visited);
 
             for (int k = 0; k < temp_size; k++) {
                 if (temp[k] == '$') {
@@ -54,10 +56,13 @@ void find_first(char symbol, char result[], int *size) {
                 add_to_set(result, size, '$');
             }
         }
+
+        visited[i] = 0; // Unmark during backtracking
     }
 }
 
 void find_follow(char symbol, char result[], int *size, int visited[]) {
+    // Start symbol receives '$' (end of input marker)
     if (prods[0][0] == symbol) {
         add_to_set(result, size, '$');
     }
@@ -72,14 +77,15 @@ void find_follow(char symbol, char result[], int *size, int visited[]) {
             if (prods[i][j] != symbol) continue;
 
             int next = j + 1;
-            int is_nullable = 1;
+            int all_nullable = 1;
 
             while (next < len) {
                 char temp[20];
                 int temp_size = 0;
                 int has_epsilon = 0;
+                int first_visited[10] = {0};
 
-                find_first(prods[i][next], temp, &temp_size);
+                find_first(prods[i][next], temp, &temp_size, first_visited);
 
                 for (int k = 0; k < temp_size; k++) {
                     if (temp[k] == '$') {
@@ -90,13 +96,14 @@ void find_follow(char symbol, char result[], int *size, int visited[]) {
                 }
 
                 if (!has_epsilon) {
-                    is_nullable = 0;
+                    all_nullable = 0;
                     break;
                 }
                 next++;
             }
 
-            if ((next == len || is_nullable) && prods[i][0] != symbol) {
+            // If symbol is at end OR all remaining RHS symbols derive epsilon
+            if ((next == len || all_nullable) && prods[i][0] != symbol) {
                 visited[i] = 1;
                 find_follow(prods[i][0], result, size, visited);
                 visited[i] = 0;
@@ -122,9 +129,10 @@ int main() {
 
         char first_set[20], follow_set[20];
         int first_size = 0, follow_size = 0;
-        int visited[10] = {0};
+        int visited_first[10] = {0};
+        int visited_follow[10] = {0};
 
-        find_first(target, first_set, &first_size);
+        find_first(target, first_set, &first_size, visited_first);
         printf("First(%c) = { ", target);
         for (int i = 0; i < first_size; i++) {
             printf("%c ", first_set[i]);
@@ -132,7 +140,7 @@ int main() {
         printf("}\n");
 
         if (isupper(target)) {
-            find_follow(target, follow_set, &follow_size, visited);
+            find_follow(target, follow_set, &follow_size, visited_follow);
             printf("Follow(%c) = { ", target);
             for (int i = 0; i < follow_size; i++) {
                 printf("%c ", follow_set[i]);
