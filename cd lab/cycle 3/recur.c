@@ -1,177 +1,172 @@
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 #include <ctype.h>
+#include <stdlib.h>
 
-char ip_sym[15], ip_ptr = 0, op[50], tmp[50];
-void e_prime();
-void e();
-void t_prime();
-void t();
-void f();
-void advance();
-int n = 0;
+int n;
+char prods[10][20];
+char input[50];
+int ptr = 0;
 
-void e() {
-    strcpy(op, "TE'");
-    printf("E=%-25s", op);
-    printf("E->TE'\n");
-    t();
-    e_prime();
-}
-
-void e_prime() {
-    int i, n = 0, l;
-    for (i = 0; i <= strlen(op); i++)
-        if (op[i] != 'e')
-            tmp[n++] = op[i];
-    strcpy(op, tmp);
-    l = strlen(op);
-    for (n = 0; n < l && op[n] != 'E'; n++);
-    
-    if (ip_sym[ip_ptr] == '+') {
-        i = n + 2;
-        do {
-            op[i + 2] = op[i];
-            i++;
-        } while (i <= l);
-        op[n++] = '+';
-        op[n++] = 'T';
-        op[n++] = 'E';
-        op[n++] = 39;
-        printf("E=%-25s", op);
-        printf("E'->+TE'\n");
-        advance();
-        t();
-        e_prime();
-    } else {
-        op[n] = 'e';
-        for (i = n + 1; i <= strlen(op); i++)
-            op[i] = op[i + 1];
-        printf("E=%-25s", op);
-        printf("E'->e\n");
+void add_to_set(char set[], int *size, char val) {
+    for (int i = 0; i < *size; i++) {
+        if (set[i] == val) return;
     }
+    set[(*size)++] = val;
 }
 
-void t() {
-    int i, n = 0, l;
-    for (i = 0; i <= strlen(op); i++)
-        if (op[i] != 'e')
-            tmp[n++] = op[i];
-    strcpy(op, tmp);
-    l = strlen(op);
-    for (n = 0; n < l && op[n] != 'T'; n++);
-
-    i = n + 1;
-    do {
-        op[i + 2] = op[i];
-        i++;
-    } while (i < l);
-    op[n++] = 'F';
-    op[n++] = 'T';
-    op[n++] = 39;
-    printf("E=%-25s", op);
-    printf("T->FT'\n");
-    f();
-    t_prime();
+int get_rhs_start(const char *prod) {
+    if (prod[1] == '-' && prod[2] == '>') return 3;
+    return 2;
 }
 
-void t_prime() {
-    int i, n = 0, l;
-    for (i = 0; i <= strlen(op); i++)
-        if (op[i] != 'e')
-            tmp[n++] = op[i];
-    strcpy(op, tmp);
-    l = strlen(op);
-    for (n = 0; n < l && op[n] != 'T'; n++);
-    
-    if (ip_sym[ip_ptr] == '*') {
-        i = n + 2;
-        do {
-            op[i + 2] = op[i];
-            i++;
-        } while (i < l);
-        op[n++] = '*';
-        op[n++] = 'F';
-        op[n++] = 'T';
-        op[n++] = 39;
-        printf("E=%-25s", op);
-        printf("T'->*FT'\n");
-        advance();
-        f();
-        t_prime();
-    } else {
-        op[n] = 'e';
-        for (i = n + 1; i <= strlen(op); i++)
-            op[i] = op[i + 1];
-        printf("E=%-25s", op);
-        printf("T'->e\n");
+// Compute FIRST set for a non-terminal symbol
+void find_first(char symbol, char result[], int *size, int visited[]) {
+    if (!isupper(symbol)) {
+        add_to_set(result, size, symbol);
+        return;
     }
-}
 
-void f() {
-    int i, n = 0, l;
-    for (i = 0; i <= strlen(op); i++)
-        if (op[i] != 'e')
-            tmp[n++] = op[i];
-    strcpy(op, tmp);
-    l = strlen(op);
-    for (n = 0; n < l && op[n] != 'F'; n++);
-    
-    if ((ip_sym[ip_ptr] == 'i') || (ip_sym[ip_ptr] == 'I')) {
-        op[n] = 'i';
-        printf("E=%-25s", op);
-        printf("F->i\n");
-        advance();
-    } else {
-        if (ip_sym[ip_ptr] == '(') {
-            advance();
-            e();
-            if (ip_sym[ip_ptr] == ')') {
-                advance();
-                i = n + 2;
-                do {
-                    op[i + 2] = op[i];
-                    i++;
-                } while (i <= l);
-                op[n++] = '(';
-                op[n++] = 'E';
-                op[n++] = ')';
-                printf("E=%-25s", op);
-                printf("F->(E)\n");
+    for (int i = 0; i < n; i++) {
+        if (prods[i][0] != symbol || visited[i]) continue;
+
+        int rhs = get_rhs_start(prods[i]);
+        if (prods[i][rhs] == '$') {
+            add_to_set(result, size, '$');
+            continue;
+        }
+
+        visited[i] = 1;
+        while (prods[i][rhs] != '\0') {
+            char temp[20];
+            int temp_size = 0, has_epsilon = 0;
+
+            find_first(prods[i][rhs], temp, &temp_size, visited);
+
+            for (int k = 0; k < temp_size; k++) {
+                if (temp[k] == '$') has_epsilon = 1;
+                else add_to_set(result, size, temp[k]);
             }
+
+            if (!has_epsilon) break;
+            rhs++;
+            if (prods[i][rhs] == '\0') add_to_set(result, size, '$');
+        }
+        visited[i] = 0;
+    }
+}
+
+// Compute FIRST set for an entire RHS string (e.g. FIRST of "TE'")
+void find_first_of_string(const char *str, char result[], int *size) {
+    if (str[0] == '$' || str[0] == '\0') {
+        add_to_set(result, size, '$');
+        return;
+    }
+
+    int curr = 0;
+    while (str[curr] != '\0') {
+        char temp[20];
+        int temp_size = 0, has_eps = 0;
+        int visited[10] = {0};
+
+        find_first(str[curr], temp, &temp_size, visited);
+
+        for (int k = 0; k < temp_size; k++) {
+            if (temp[k] == '$') has_eps = 1;
+            else add_to_set(result, size, temp[k]);
+        }
+
+        if (!has_eps) break;
+        curr++;
+        if (str[curr] == '\0') add_to_set(result, size, '$');
+    }
+}
+
+// Forward declaration of recursive parser engine
+int parse_non_terminal(char symbol);
+
+// Parse a single symbol (Terminal or Non-Terminal) recursively
+int parse_symbol(char symbol) {
+    if (!isupper(symbol)) {
+        // Terminal Matching Step
+        if (symbol == '$') return 1; // Epsilon match
+
+        if (input[ptr] == symbol) {
+            printf("Matched Terminal '%c' at index %d\n", symbol, ptr);
+            ptr++; // Advance input pointer
+            return 1;
         } else {
-            printf("\n\t syntax error");
-            exit(1);
+            return 0; // Terminal mismatch
         }
+    } else {
+        // Non-Terminal Recursive Descent Call
+        return parse_non_terminal(symbol);
     }
 }
 
-void advance() {
-    ip_ptr++;
+// Universal Recursive Descent Engine for Non-Terminals
+int parse_non_terminal(char symbol) {
+    char curr_char = input[ptr];
+
+    for (int i = 0; i < n; i++) {
+        if (prods[i][0] != symbol) continue;
+
+        int rhs = get_rhs_start(prods[i]);
+        char first_set[20];
+        int first_size = 0;
+
+        find_first_of_string(prods[i] + rhs, first_set, &first_size);
+
+        // Check if current input character matches FIRST(RHS)
+        int matches = 0;
+        int is_nullable = 0;
+
+        for (int k = 0; k < first_size; k++) {
+            if (first_set[k] == curr_char) matches = 1;
+            if (first_set[k] == '$') is_nullable = 1;
+        }
+
+        // If current input token matches FIRST(RHS) OR if RHS is nullable and input hits end/fallback
+        if (matches || (is_nullable && curr_char == '\0')) {
+            printf("Expand: %c -> %s\n", symbol, prods[i] + rhs);
+
+            // Execute recursive calls symbol-by-symbol down the RHS
+            int curr = rhs;
+            while (prods[i][curr] != '\0') {
+                if (prods[i][curr] == '$') break; // Epsilon rule: nothing to parse
+
+                if (!parse_symbol(prods[i][curr])) {
+                    return 0; // Recursive branch failed
+                }
+                curr++;
+            }
+            return 1; // Successfully expanded and parsed this non-terminal
+        }
+    }
+    return 0; // No valid production rule matched
 }
 
-void main() {
-    int i;
-    
-    printf("\nGrammar without left recursion");
-    printf("\n\t\t E->TE' \n\t\t E'->+TE'|e \n\t\t T->FT' ");
-    printf("\n\t\t T'->*FT'|e \n\t\t F->(E)|i");
-    printf("\n Enter the input expression: ");
-    scanf("%s", ip_sym);
-    printf("Expressions\t Sequence of production rules\n");
-    e();
-    
-    for (i = 0; i < strlen(ip_sym); i++) {
-        if (ip_sym[i] != '+' && ip_sym[i] != '*' && ip_sym[i] != '(' &&
-            ip_sym[i] != ')' && ip_sym[i] != 'i' && ip_sym[i] != 'I') {
-            printf("\nSyntax error");
-            break;
-        }
-        for (i = 0; i <= strlen(op); i++)
-            if (op[i] != 'e')
-                tmp[n++] = op[i];
-        strcpy(op, tmp);
-        printf("\nE=%-25s", op);
+int main() {
+    printf("Enter number of productions: ");
+    if (scanf("%d", &n) != 1) return 0;
+
+    printf("Enter productions (e.g., E->TR, R->+TR, R->$ for epsilon):\n");
+    for (int i = 0; i < n; i++) {
+        scanf("%s", prods[i]);
     }
+
+    printf("\nEnter expression to parse: ");
+    scanf("%s", input);
+
+    printf("\n--- Recursive Descent Parsing Derivation ---\n");
+    char start_symbol = prods[0][0];
+
+    ptr = 0;
+    if (parse_non_terminal(start_symbol) && input[ptr] == '\0') {
+        printf("\nResult: Input String Successfully Parsed!\n");
+    } else {
+        printf("\nResult: Syntax Error at index %d ('%c')\n", ptr, input[ptr]);
+    }
+
+    return 0;
 }
