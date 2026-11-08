@@ -40,14 +40,12 @@ int main() {
         for (int i = 0; i < n; i++) new_group[i] = -1;
 
         for (int i = 0; i < n; i++) {
-            if (new_group[i] != -1) continue; // Already assigned to a new group
+            if (new_group[i] != -1) continue;
             new_group[i] = g_count;
 
             for (int j = i + 1; j < n; j++) {
-                // Check if state i and state j belong to same current group
                 if (group[i] == group[j]) {
                     int same = 1;
-                    // Check if transitions go to the same group for all symbols
                     for (int a = 0; a < noalpha; a++) {
                         if (group[trans[i][a]] != group[trans[j][a]]) {
                             same = 0;
@@ -60,16 +58,20 @@ int main() {
             g_count++;
         }
 
-        // Check if partitions changed
-        int changed = 0;
+        // Check if the partition count changed (i.e., a split happened)
+        int old_max = 0, new_max = 0;
         for (int i = 0; i < n; i++) {
-            if (group[i] != new_group[i]) {
-                changed = 1;
-                group[i] = new_group[i];
-            }
+            if (group[i] > old_max) old_max = group[i];
+            if (new_group[i] > new_max) new_max = new_group[i];
         }
 
-        if (!changed) break; // Partitioning complete
+        // Copy new groups over
+        for (int i = 0; i < n; i++) {
+            group[i] = new_group[i];
+        }
+
+        // If number of groups didn't increase, partitioning is complete
+        if (old_max == new_max) break;
     }
 
     // Step 3: Print Minimized DFA Groups
