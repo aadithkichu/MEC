@@ -3,156 +3,148 @@
 #include <ctype.h>
 
 int n;
-char a[10][20]; // Grammar productions (e.g., E=E+T or E->E+T)
+char prods[10][20];
 
-void addToSet(char set[], int *size, char c) {
-    for (int k = 0; k < *size; k++) {
-        if (set[k] == c) return; // Avoid duplicates
+void add_to_set(char set[], int *size, char val) {
+    for (int i = 0; i < *size; i++) {
+        if (set[i] == val) return;
     }
-    set[(*size)++] = c;
+    set[(*size)++] = val;
 }
 
-void findFirst(char c, char result[], int *resSize) {
-    // If terminal, FIRST is the symbol itself
-    if (!isupper(c)) {
-        addToSet(result, resSize, c);
+int get_rhs_start(const char *prod) {
+    if (prod[1] == '-' && prod[2] == '>') return 3;
+    return 2;
+}
+
+void find_first(char symbol, char result[], int *size) {
+    if (!isupper(symbol)) {
+        add_to_set(result, size, symbol);
         return;
     }
 
-    for (int k = 0; k < n; k++) {
-        if (a[k][0] == c) {
-            int rhsIdx = 2; // RHS starts after '=' or '->'
-            if (a[k][1] == '-' && a[k][2] == '>') rhsIdx = 3;
+    for (int i = 0; i < n; i++) {
+        if (prods[i][0] != symbol) continue;
 
-            // Handle epsilon production directly
-            if (a[k][rhsIdx] == '$') {
-                addToSet(result, resSize, '$');
-                continue;
+        int rhs = get_rhs_start(prods[i]);
+        if (prods[i][rhs] == '$') {
+            add_to_set(result, size, '$');
+            continue;
+        }
+
+        while (prods[i][rhs] != '\0') {
+            char temp[20];
+            int temp_size = 0;
+            int has_epsilon = 0;
+
+            find_first(prods[i][rhs], temp, &temp_size);
+
+            for (int k = 0; k < temp_size; k++) {
+                if (temp[k] == '$') {
+                    has_epsilon = 1;
+                } else {
+                    add_to_set(result, size, temp[k]);
+                }
             }
 
-            // Loop through RHS symbols to handle nullable chains
-            while (a[k][rhsIdx] != '\0') {
-                char subResult[20];
-                int subSize = 0;
+            if (!has_epsilon) break;
 
-                findFirst(a[k][rhsIdx], subResult, &subSize);
-
-                int hasEpsilon = 0;
-                for (int s = 0; s < subSize; s++) {
-                    if (subResult[s] == '$') {
-                        hasEpsilon = 1;
-                    } else {
-                        addToSet(result, resSize, subResult[s]);
-                    }
-                }
-
-                // Stop if current symbol is not nullable
-                if (!hasEpsilon) break;
-
-                rhsIdx++;
-                // If all RHS symbols were nullable, add epsilon
-                if (a[k][rhsIdx] == '\0') {
-                    addToSet(result, resSize, '$');
-                }
+            rhs++;
+            if (prods[i][rhs] == '\0') {
+                add_to_set(result, size, '$');
             }
         }
     }
 }
 
-void findFollow(char c, char result[], int *resSize, int visited[]) {
-    // Check for recursion loops in FOLLOW computation
-    for (int k = 0; k < n; k++) {
-        if (a[k][0] == c && visited[k]) return;
-    }
-
-    // Start symbol gets '$'
-    if (a[0][0] == c) {
-        addToSet(result, resSize, '$');
+void find_follow(char symbol, char result[], int *size, int visited[]) {
+    if (prods[0][0] == symbol) {
+        add_to_set(result, size, '$');
     }
 
     for (int i = 0; i < n; i++) {
-        int startRhs = (a[i][1] == '-' && a[i][2] == '>') ? 3 : 2;
-        int len = strlen(a[i]);
+        if (visited[i]) continue;
 
-        for (int j = startRhs; j < len; j++) {
-            if (a[i][j] == c) {
-                int nextIdx = j + 1;
-                int allNullable = 1;
+        int rhs = get_rhs_start(prods[i]);
+        int len = strlen(prods[i]);
 
-                while (nextIdx < len) {
-                    char firstOfNext[20];
-                    int firstSize = 0;
+        for (int j = rhs; j < len; j++) {
+            if (prods[i][j] != symbol) continue;
 
-                    findFirst(a[i][nextIdx], firstOfNext, &firstSize);
+            int next = j + 1;
+            int is_nullable = 1;
 
-                    int hasEpsilon = 0;
-                    for (int s = 0; s < firstSize; s++) {
-                        if (firstOfNext[s] == '$') {
-                            hasEpsilon = 1;
-                        } else {
-                            addToSet(result, resSize, firstOfNext[s]);
-                        }
+            while (next < len) {
+                char temp[20];
+                int temp_size = 0;
+                int has_epsilon = 0;
+
+                find_first(prods[i][next], temp, &temp_size);
+
+                for (int k = 0; k < temp_size; k++) {
+                    if (temp[k] == '$') {
+                        has_epsilon = 1;
+                    } else {
+                        add_to_set(result, size, temp[k]);
                     }
-
-                    if (!hasEpsilon) {
-                        allNullable = 0;
-                        break;
-                    }
-                    nextIdx++;
                 }
 
-                // If symbol is at end or remaining symbols are nullable, add FOLLOW(LHS)
-                if ((nextIdx == len || allNullable) && a[i][0] != c) {
-                    visited[i] = 1;
-                    findFollow(a[i][0], result, resSize, visited);
-                    visited[i] = 0;
+                if (!has_epsilon) {
+                    is_nullable = 0;
+                    break;
                 }
+                next++;
+            }
+
+            if ((next == len || is_nullable) && prods[i][0] != symbol) {
+                visited[i] = 1;
+                find_follow(prods[i][0], result, size, visited);
+                visited[i] = 0;
             }
         }
     }
 }
 
 int main() {
-    int z;
-    char c;
-
     printf("Enter number of productions: ");
     if (scanf("%d", &n) != 1) return 0;
 
     printf("Enter productions (e.g., E=E+T or E->E+T, use $ for epsilon):\n");
     for (int i = 0; i < n; i++) {
-        scanf("%s", a[i]);
+        scanf("%s", prods[i]);
     }
 
+    int choice;
     do {
+        char target;
         printf("\nEnter element whose FIRST & FOLLOW is to be found: ");
-        scanf(" %c", &c);
+        scanf(" %c", &target);
 
-        char firstSet[20], followSet[20];
-        int firstSize = 0, followSize = 0;
+        char first_set[20], follow_set[20];
+        int first_size = 0, follow_size = 0;
         int visited[10] = {0};
 
-        findFirst(c, firstSet, &firstSize);
-        printf("First(%c) = { ", c);
-        for (int i = 0; i < firstSize; i++) {
-            printf("%c ", firstSet[i]);
+        find_first(target, first_set, &first_size);
+        printf("First(%c) = { ", target);
+        for (int i = 0; i < first_size; i++) {
+            printf("%c ", first_set[i]);
         }
         printf("}\n");
 
-        if (isupper(c)) {
-            findFollow(c, followSet, &followSize, visited);
-            printf("Follow(%c) = { ", c);
-            for (int i = 0; i < followSize; i++) {
-                printf("%c ", followSet[i]);
+        if (isupper(target)) {
+            find_follow(target, follow_set, &follow_size, visited);
+            printf("Follow(%c) = { ", target);
+            for (int i = 0; i < follow_size; i++) {
+                printf("%c ", follow_set[i]);
             }
             printf("}\n");
         } else {
-            printf("Follow(%c) is not defined for terminals.\n", c);
+            printf("Follow(%c) is not defined for terminals.\n", target);
         }
 
         printf("Continue (1 to repeat / 0 to exit)? ");
-        scanf("%d", &z);
-    } while (z == 1);
+        scanf("%d", &choice);
+    } while (choice == 1);
 
     return 0;
 }
