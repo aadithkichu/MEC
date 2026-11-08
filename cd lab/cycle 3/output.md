@@ -29,15 +29,46 @@ $			$			String is accepted
 
 ```
 mec@ccf-8:~/Documents/CS7B/cycle3$ ./a.out
-Enter the no of productions:
-2
-Enter the productions:
-S=aA
-A=b
-Enter the elements whose first & follow is to be found: S
-First(S)={a}
-Follow(S)={$}
-Continue(0/1)? 0
+Enter number of productions: 8
+Enter productions (e.g., E=E+T or E->E+T, use $ for epsilon):
+E=TR
+R=+TR
+R=$
+T=FY
+Y=*FY
+Y=$
+F=(E)
+F=i
+
+Enter element whose FIRST & FOLLOW is to be found: E
+First(E) = { ( i }
+Follow(E) = { $ ) }
+Continue (1 to repeat / 0 to exit)? 1
+
+Enter element whose FIRST & FOLLOW is to be found: R
+First(R) = { + $ }
+Follow(R) = { $ ) }
+Continue (1 to repeat / 0 to exit)? 1
+
+Enter element whose FIRST & FOLLOW is to be found: T
+First(T) = { ( i }
+Follow(T) = { + $ ) }
+Continue (1 to repeat / 0 to exit)? 1
+
+Enter element whose FIRST & FOLLOW is to be found: Y
+First(Y) = { * $ }
+Follow(Y) = { + $ ) }
+Continue (1 to repeat / 0 to exit)? 1
+
+Enter element whose FIRST & FOLLOW is to be found: F
+First(F) = { ( i }
+Follow(F) = { * + $ ) }
+Continue (1 to repeat / 0 to exit)? 1
+
+Enter element whose FIRST & FOLLOW is to be found: i
+First(i) = { i }
+Follow(i) is not defined for terminals.
+Continue (1 to repeat / 0 to exit)? 0
 ```
 ```
 mec@ccf-8:~/Documents/CS7B/cycle3$ ./a.out
