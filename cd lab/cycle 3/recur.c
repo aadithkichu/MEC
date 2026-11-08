@@ -42,6 +42,9 @@ int parse_non_terminal(char symbol, int *ptr) {
         int rhs = get_rhs_start(prods[i]);
         int success = 1;
 
+        // Print HERE (Top-Down order) when expanding the production
+        printf("Applied: %c -> %s\n", symbol, prods[i] + rhs);
+
         int curr = rhs;
         while (prods[i][curr] != '\0') {
             if (prods[i][curr] == '$') break;
@@ -54,7 +57,6 @@ int parse_non_terminal(char symbol, int *ptr) {
         }
 
         if (success) {
-            printf("Applied: %c -> %s\n", symbol, prods[i] + rhs);
             return 1;
         }
     }
@@ -79,7 +81,7 @@ int main() {
     max_ptr = 0;
     char start_symbol = prods[0][0];
 
-    printf("\n--- Recursive Descent Derivation ---\n");
+    printf("\n--- Recursive Descent Derivation (Top-Down) ---\n");
     if (parse_non_terminal(start_symbol, &ptr) && input[ptr] == '\0') {
         printf("\nResult: Input String Successfully Parsed!\n");
     } else {
