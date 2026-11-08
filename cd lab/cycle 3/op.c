@@ -1,105 +1,92 @@
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 
 int main() {
-    char stack[50], ip[50], opt[10][10][2], ter[10];
-    int i, j, k, n, top = 0, col = -1, row = -1;
+    int n;
+    char ter[10];
+    char opt[10][10]; // Clean 2D array for single operator characters (<, >, =)
 
-    printf("Enter the no. of terminals: ");
-    if (scanf("%d", &n) != 1) return 0;
+    printf("Enter the no. of terminals :\n");
+    scanf("%d", &n);
 
-    printf("Enter the terminals (e.g., i+*$): ");
+    printf("\nEnter the terminals :\n");
     scanf("%s", ter);
 
-    printf("\nEnter the precedence table values (<, >, =):\n");
-    for (i = 0; i < n; i++) {
-        for (j = 0; j < n; j++) {
+    printf("\nEnter the table values (<, >, =):\n");
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
             printf("Value for %c %c: ", ter[i], ter[j]);
-            scanf("%s", opt[i][j]);
+            // Read single character directly (space before %c skips whitespace/newlines)
+            scanf(" %c", &opt[i][j]);
         }
     }
 
     printf("\n**** OPERATOR PRECEDENCE TABLE ****\n");
-    for (i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
         printf("\t%c", ter[i]);
     }
     printf("\n");
 
-    for (i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
         printf("\n%c", ter[i]);
-        for (j = 0; j < n; j++) {
-            printf("\t%c", opt[i][j][0]);
+        for (int j = 0; j < n; j++) {
+            printf("\t%c", opt[i][j]);
         }
     }
     printf("\n\n");
 
+    char stack[50];
+    int top = 0;
     stack[top] = '$';
-    stack[top + 1] = '\0';
 
-    printf("Enter the input string (ending with $): ");
+    char ip[50];
+    printf("Enter the input string: ");
     scanf("%s", ip);
 
-    i = 0;
+    int i = 0;
     printf("\n%-20s %-20s %-20s\n", "STACK", "INPUT STRING", "ACTION");
 
     while (i < strlen(ip)) {
-        // Print current stack and input state
-        for (k = 0; k <= top; k++) printf("%c", stack[k]);
-        printf("\t\t\t");
-        for (k = i; k < strlen(ip); k++) printf("%c", ip[k]);
-        printf("\t\t\t");
-
-        // Find top-most terminal on the stack
-        int get_top_ter = top;
-        while (get_top_ter >= 0) {
-            int found = 0;
-            for (k = 0; k < n; k++) {
-                if (stack[get_top_ter] == ter[k]) {
-                    col = k;
-                    found = 1;
-                    break;
-                }
-            }
-            if (found) break;
-            get_top_ter--;
-        }
-
-        // Find current input symbol in terminals
-        row = -1;
-        for (k = 0; k < n; k++) {
-            if (ip[i] == ter[k]) {
-                row = k;
-                break;
+        // Print stack (filtering out hidden internal relation markers '<' and '=')
+        printf("\n");
+        for (int k = 0; k <= top; k++) {
+            if (stack[k] != '<' && stack[k] != '=') {
+                printf("%c", stack[k]);
             }
         }
+        printf("\t\t\t%s\t\t\t", ip + i);
 
-        if (col == -1 || row == -1) {
-            printf("Error: Invalid terminal symbol encountered.\n");
-            break;
+        // Find terminal indices for stack[top] and ip[i]
+        int row = -1, col = -1;
+        for (int k = 0; k < n; k++) {
+            if (stack[top] == ter[k]) row = k;
+            if (ip[i] == ter[k]) col = k;
         }
 
+        // Accept condition
         if (stack[top] == '$' && ip[i] == '$') {
             printf("String is accepted\n");
             break;
-        } 
-        else if (opt[col][row][0] == '<' || opt[col][row][0] == '=') {
-            stack[++top] = opt[col][row][0];
-            stack[++top] = ip[i];
-            stack[top + 1] = '\0';
-            printf("Shift %c\n", ip[i]);
+        }
+
+        char rel = opt[row][col];
+
+        // Shift condition
+        if (rel == '<' || rel == '=') {
+            printf("Shift %c", ip[i]);
+            stack[++top] = rel;   // Push precedence marker
+            stack[++top] = ip[i]; // Push terminal
             i++;
         } 
-        else if (opt[col][row][0] == '>') {
+        // Reduce condition
+        else if (rel == '>') {
+            printf("Reduce");
             while (top > 0 && stack[top] != '<') {
-                --top;
+                top--;
             }
-            if (top > 0) {
-                --top; // Remove '<'
-            }
-            stack[top + 1] = '\0';
-            printf("Reduce\n");
+            if (top > 0) top--; // Pop the '<' marker itself
         } 
+        // Invalid relation / Reject condition
         else {
             printf("String is not accepted\n");
             break;
