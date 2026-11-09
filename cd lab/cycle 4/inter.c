@@ -29,23 +29,16 @@ int main() {
         if (isalpha(input[i])) stack[++top] = input[i] ;
         else {
             if (input[i]==')') {
-                while (opstack[optop]!='(') {
-                    pop();
-                }
+                while (opstack[optop]!='(') pop();
                 optop--;
             }
             else if (input[i]=='(' || input[i]=='^') opstack[++optop] = input[i] ;
             else {
-                while (optop>=0 && prec(opstack[optop]) >= prec(input[i])) {
-                    pop();
-                }
+                while (optop>=0 && prec(opstack[optop]) >= prec(input[i])) pop();
                 opstack[++optop] = input[i] ;
             }
         }
     }
-    while (optop>=0) {
-        pop();
-    }
-
+    while (optop>=0) pop();
     return 0;
 }
