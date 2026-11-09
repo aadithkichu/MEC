@@ -1,102 +1,67 @@
 #include <stdio.h>
 #include <string.h>
-#include <ctype.h>
-#include <stdlib.h>
-
-int num_prods;
-char prods[10][20];
-char input[50];
-char stack[50];
-int top = -1;
-int ptr = 0;
-
-// Helper to get the start index of RHS (handles S->cAd or S=cAd)
-int get_rhs_start(const char *prod) {
-    if (prod[1] == '-' && prod[2] == '>') return 3;
-    return 2;
-}
-
-void print_step(const char *action) {
-    stack[top + 1] = '\0';
-    printf("$%-15s\t%-15s$\t%s\n", stack, input + ptr, action);
-}
-
-void push(char c) {
-    stack[++top] = c;
-}
-
-void pop(int count) {
-    top -= count;
-}
-
-// Scans user productions and reduces if RHS matches strictly AT THE TOP of the stack
-int reduce() {
-    for (int i = 0; i < num_prods; i++) {
-        char lhs = prods[i][0];
-        int rhs_start = get_rhs_start(prods[i]);
-        char *rhs = prods[i] + rhs_start;
-        int rhs_len = strlen(rhs);
-
-        // Skip epsilon production ($) in top-of-stack handle checking
-        if (rhs_len == 1 && rhs[0] == '$') continue;
-
-        // Check if stack has enough symbols and top of stack matches RHS
-        if (top + 1 >= rhs_len) {
-            int match = 1;
-            for (int k = 0; k < rhs_len; k++) {
-                if (stack[top - rhs_len + 1 + k] != rhs[k]) {
-                    match = 0;
-                    break;
-                }
-            }
-
-            if (match) {
-                pop(rhs_len);
-                push(lhs);
-                
-                char action_msg[50];
-                snprintf(action_msg, sizeof(action_msg), "reduce by %c -> %s", lhs, rhs);
-                print_step(action_msg);
-                return 1; // Reduction made
-            }
-        }
-    }
-    return 0; // No handle found at top of stack
-}
 
 int main() {
+    int n, top = -1, ptr = 0, i, k, len, match;
+    char prods[10][20], input[50], stack[50];
+
     printf("Enter number of productions: ");
-    if (scanf("%d", &num_prods) != 1) return 0;
+    if (scanf("%d", &n) != 1) return 0;
 
-    printf("Enter productions (e.g., S->cAd, A->ab, A->a, use $ for epsilon):\n");
-    for (int i = 0; i < num_prods; i++) {
-        scanf("%s", prods[i]);
-    }
+    printf("Enter productions (e.g., S->cAd):\n");
+    for (i = 0; i < n; i++) scanf("%s", prods[i]);
 
-    printf("\nEnter input expression: ");
+    printf("Enter input expression: ");
     scanf("%s", input);
 
-    char start_symbol = prods[0][0];
-
-    printf("\n%-16s\t%-16s\t%s\n", "STACK", "INPUT", "ACTION");
+    printf("\n%-15s\t%-15s\t%s\n", "STACK", "INPUT", "ACTION");
     printf("---------------------------------------------------\n");
-    print_step("initial");
+
+    stack[0] = '\0';
+    printf("$%-14s\t%-14s$\tinitial\n", stack, input);
 
     while (1) {
-        // Step 1: Reduce repeatedly as long as top of stack matches any production RHS
-        while (reduce());
+        // Reduce phase
+        do {
+            match = 0;
+            for (i = 0; i < n; i++) {
+                char *rhs = prods[i] + 3; // Skip 'A->'
+                len = strlen(rhs);
 
-        // Step 2: Accept condition (Stack contains ONLY start_symbol and input is fully read)
-        if (top == 0 && stack[0] == start_symbol && input[ptr] == '\0') {
-            print_step("accept");
+                if (len == 1 && rhs[0] == '$') continue;
+
+                if (top + 1 >= len) {
+                    match = 1;
+                    for (k = 0; k < len; k++) {
+                        if (stack[top - len + 1 + k] != rhs[k]) {
+                            match = 0;
+                            break;
+                        }
+                    }
+
+                    if (match) {
+                        top -= len;
+                        stack[++top] = prods[i][0];
+                        stack[top + 1] = '\0';
+                        printf("$%-14s\t%-14s$\treduce by %s\n", stack, input + ptr, prods[i]);
+                        break;
+                    }
+                }
+            }
+        } while (match);
+
+        // Accept check
+        if (top == 0 && stack[0] == prods[0][0] && input[ptr] == '\0') {
+            printf("$%-14s\t%-14s$\taccept\n", stack, input + ptr);
             printf("\nResult: Input String Successfully Parsed!\n");
             break;
         }
 
-        // Step 3: Shift next token from input onto stack
+        // Shift phase
         if (input[ptr] != '\0') {
-            push(input[ptr++]);
-            print_step("shift");
+            stack[++top] = input[ptr++];
+            stack[top + 1] = '\0';
+            printf("$%-14s\t%-14s$\tshift\n", stack, input + ptr);
         } else {
             printf("\nResult: Syntax Error near index %d ('%c')\n", ptr, input[ptr]);
             break;
@@ -104,4 +69,4 @@ int main() {
     }
 
     return 0;
-}   
+}
