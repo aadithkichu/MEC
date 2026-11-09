@@ -1,43 +1,51 @@
-#include <ctype.h>
 #include <stdio.h>
+#include <string.h>
+#include <ctype.h>
 
-int precedence(char op) {
-    if (op == '*' || op == '/') return 2;
-    if (op == '+' || op == '-') return 1;
-    return 0;
+int prec(char c) {
+    if (c=='*' || c=='/') return 2 ;
+    if (c=='+' || c=='-') return 1 ;
+    return 0 ;
+}
+
+int stack[20] , opstack[20], top = -1 , optop = -1 , counter = 0 ;
+
+void pop() {
+    char topc = opstack[optop--] ;
+    char first = stack[top--] ;
+    char second = stack[top--];
+    if (isdigit(first) && isdigit(second)) printf("t%d = t%c %c t%c\n" , counter , second , topc , first) ;
+    else if (isdigit(first)) printf("t%d = %c %c t%c\n" , counter , second , topc , first) ;
+    else if (isdigit(second)) printf("t%d = t%c %c %c\n" , counter , second , topc , first) ;
+    else printf("t%d = %c %c %c\n" , counter , second , topc , first) ;
+    stack[++top] = counter+'0' ;
+    counter++;
 }
 
 int main() {
-    char expr[50] = "a+b*c", result_var[] = "x";
-    char op_stack[20], val_stack[20][10];
-    int op_top = -1, val_top = -1, t = 1;
-
-    printf("Input Expression: %s = %s\n\n", result_var, expr);
-    printf("Generated Intermediate Code (Three-Address Code):\n");
-    printf("--------------------------------------------------\n");
-
-    for (int i = 0; expr[i]; i++) {
-        if (isalnum(expr[i])) {
-            // Push operand directly to val_stack as string
-            val_top++;
-            val_stack[val_top][0] = expr[i];
-            val_stack[val_top][1] = '\0';
-        } else {
-            // Process higher or equal precedence operators
-            while (op_top != -1 && precedence(op_stack[op_top]) >= precedence(expr[i])) {
-                printf("t%d = %s %c %s\n", t, val_stack[val_top - 1], op_stack[op_top--], val_stack[val_top]);
-                sprintf(val_stack[--val_top], "t%d", t++);
+    char input[20] ;
+    scanf("%s",input);
+    for (int i=0 ; i<strlen(input) ; i++) {
+        if (isalpha(input[i])) stack[++top] = input[i] ;
+        else {
+            if (input[i]==')') {
+                while (opstack[optop]!='(') {
+                    pop();
+                }
+                optop--;
             }
-            op_stack[++op_top] = expr[i];
+            else if (input[i]=='(' || input[i]=='^') opstack[++optop] = input[i] ;
+            else {
+                while (optop>=0 && prec(opstack[optop]) >= prec(input[i])) {
+                    pop();
+                }
+                opstack[++optop] = input[i] ;
+            }
         }
     }
-
-    // Flush remaining operators
-    while (op_top != -1) {
-        printf("t%d = %s %c %s\n", t, val_stack[val_top - 1], op_stack[op_top--], val_stack[val_top]);
-        sprintf(val_stack[--val_top], "t%d", t++);
+    while (optop>=0) {
+        pop();
     }
 
-    printf("%s = %s\n", result_var, val_stack[val_top]);
     return 0;
 }
